@@ -1,0 +1,60 @@
+# Build and binary files
+bin/
+obj/
+out/
+*.exe
+*.dll
+*.pdb
+*.log
+*.vspscc
+*.vssscc
+
+# User-specific settings
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Logs and cache
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+node_modules/
+packages/
+.vs/
+.idea/
+.project/
+.settings/
+*.sw?
+Thumbs.db
+
+# Entity Framework settings
+Migrations/
+Database.mdf
+Database_log.ldf
+
+# Docker and CI/CD
+docker-compose.override.yml
+docker-compose.debug.yml
+.env
+
+# Certificates
+*.pfx
+*.cer
+secrets.json
+appsettings*.json
+
+# Test results and coverage
+TestResults/
+coverage/
+*.coverage
+*.testsettings
+*.vsconfig
+
+# Other
+RELEASES/
