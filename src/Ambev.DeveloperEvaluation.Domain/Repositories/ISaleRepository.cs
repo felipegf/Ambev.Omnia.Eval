@@ -21,7 +21,7 @@ public interface ISaleRepository
     Task<Sale?> GetByIdAsync(Guid id);
 
     /// <summary>
-    /// Retrieves all sales from the database.
+    /// Retrieves all active (non-deleted) sales from the database.
     /// </summary>
     /// <returns>A list of sales.</returns>
     Task<IEnumerable<Sale>> GetAllAsync();
@@ -33,7 +33,7 @@ public interface ISaleRepository
     void Update(Sale sale);
 
     /// <summary>
-    /// Deletes a sale entity.
+    /// Soft deletes a sale.
     /// </summary>
     /// <param name="sale">The sale entity to be deleted.</param>
     void Delete(Sale sale);
