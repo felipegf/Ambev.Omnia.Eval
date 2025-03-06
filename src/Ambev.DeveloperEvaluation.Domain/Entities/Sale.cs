@@ -45,15 +45,20 @@ public class Sale : BaseEntity
     public DateTime? UpdatedAt { get; private set; }
 
     /// <summary>
+    /// Indicates whether the sale is canceled.
+    /// </summary>
+    public bool IsCancelled { get; private set; }
+
+    /// <summary>
+    /// Indicates whether the sale is deleted (soft delete).
+    /// </summary>
+    public bool IsDeleted { get; private set; }
+
+    /// <summary>
     /// Gets the list of items in the sale.
     /// </summary>
     private readonly List<SaleItem> _saleItems = new();
     public IReadOnlyCollection<SaleItem> SaleItems => _saleItems.AsReadOnly();
-
-    /// <summary>
-    /// Gets the status of the sale (Cancelled or Not).
-    /// </summary>
-    public bool IsCancelled { get; private set; }
 
     /// <summary>
     /// Initializes a new instance of the Sale class.
@@ -66,6 +71,7 @@ public class Sale : BaseEntity
         BranchId = branchId;
         CreatedAt = DateTime.UtcNow;
         _saleItems = items ?? throw new ArgumentNullException(nameof(items));
+        IsDeleted = false;
     }
 
     /// <summary>
@@ -100,6 +106,15 @@ public class Sale : BaseEntity
     public void Cancel()
     {
         IsCancelled = true;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Marks the sale as deleted (soft delete).
+    /// </summary>
+    public void Delete()
+    {
+        IsDeleted = true;
         UpdatedAt = DateTime.UtcNow;
     }
 

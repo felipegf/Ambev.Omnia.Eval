@@ -30,15 +30,16 @@ public class SaleRepository : ISaleRepository
     public async Task<Sale?> GetByIdAsync(Guid id)
     {
         return await _context.Sales
-            .Include(s => s.SaleItems) // Ensure SaleItems are loaded
-            .FirstOrDefaultAsync(s => s.Id == id);
+            .Include(s => s.SaleItems)
+            .FirstOrDefaultAsync(s => s.Id == id && !s.IsDeleted);
     }
 
     /// <inheritdoc />
     public async Task<IEnumerable<Sale>> GetAllAsync()
     {
         return await _context.Sales
-            .Include(s => s.SaleItems) // Load related items
+            .Include(s => s.SaleItems)
+            .Where(s => !s.IsDeleted)
             .ToListAsync();
     }
 
@@ -51,6 +52,7 @@ public class SaleRepository : ISaleRepository
     /// <inheritdoc />
     public void Delete(Sale sale)
     {
-        _context.Sales.Remove(sale);
+        sale.Delete();
+        _context.Sales.Update(sale);
     }
 }
