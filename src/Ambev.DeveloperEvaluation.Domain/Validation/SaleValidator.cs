@@ -17,7 +17,7 @@ namespace Ambev.DeveloperEvaluation.Domain.Validation
             RuleFor(sale => sale.SaleDate)
                 .LessThanOrEqualTo(DateTime.UtcNow).WithMessage("Sale date cannot be in the future.");
 
-            RuleFor(sale => sale.Branch)
+            RuleFor(sale => sale.BranchId)
                 .NotEmpty().WithMessage("Branch cannot be empty.");
 
             RuleFor(sale => sale.CustomerId)
