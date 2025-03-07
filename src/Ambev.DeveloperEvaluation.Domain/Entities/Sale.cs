@@ -61,6 +61,11 @@ public class Sale : BaseEntity
     public IReadOnlyCollection<SaleItem> SaleItems => _saleItems.AsReadOnly();
 
     /// <summary>
+    /// Protected Constructor (EF Core Needed)
+    /// </summary>
+    protected Sale() { }
+
+    /// <summary>
     /// Initializes a new instance of the Sale class.
     /// </summary>
     public Sale(string saleNumber, DateTime saleDate, Guid customerId, Guid branchId, List<SaleItem> items)
@@ -70,7 +75,7 @@ public class Sale : BaseEntity
         CustomerId = customerId;
         BranchId = branchId;
         CreatedAt = DateTime.UtcNow;
-        _saleItems = items ?? throw new ArgumentNullException(nameof(items));
+        _saleItems = items ?? [];
         IsDeleted = false;
     }
 
