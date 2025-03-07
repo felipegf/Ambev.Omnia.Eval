@@ -14,9 +14,6 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.ToTable("Sales");
 
         builder.HasKey(s => s.Id);
-        builder.Property(s => s.Id)
-            .HasColumnType("uuid")
-            .HasDefaultValueSql("gen_random_uuid()");
 
         builder.Property(s => s.SaleNumber)
             .IsRequired()
@@ -34,10 +31,17 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
         builder.Property(s => s.IsCancelled)
             .HasDefaultValue(false);
 
-        // Configuração do relacionamento com SaleItems
+        builder.Property(s => s.CreatedAt)
+            .IsRequired();
+
+        builder.Property(s => s.UpdatedAt)
+            .IsRequired(false);
+        
         builder.HasMany(s => s.SaleItems)
                .WithOne()
                .HasForeignKey("SaleId")
                .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.Navigation(s => s.SaleItems).AutoInclude();
     }
 }
