@@ -2,6 +2,7 @@
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.Domain.Services;
 using Ambev.DeveloperEvaluation.ORM.UoW;
+using FluentValidation;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
@@ -36,29 +37,35 @@ public sealed class CreateSaleHandler : IRequestHandler<CreateSaleCommand, Creat
     /// <returns>The result of the sale creation process.</returns>
     public async Task<CreateSaleResult> Handle(CreateSaleCommand request, CancellationToken cancellationToken)
     {
+        // Validate the request before processing
+        var validator = new CreateSaleCommandValidator();
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+
+        if (!validationResult.IsValid)
+        {
+            throw new ValidationException(validationResult.Errors);
+        }
+
         await _unitOfWork.BeginTransactionAsync();
 
         try
         {
+            // Create a new sale entity
             var sale = new Sale(
                 saleNumber: GenerateSaleNumber(),
                 saleDate: request.SaleDate,
                 customerId: request.CustomerId,
                 branchId: request.BranchId,
-                items: new List<SaleItem>() // 🔹 Initialize list and populate later
-            );
-            
-            foreach (var item in request.Items)
-            {
-                sale.AddSaleItem(new SaleItem(
-                    saleId: sale.Id,
+                items: request.Items.Select(item => new SaleItem(
+                    saleId: Guid.NewGuid(), // SaleItem constructor requires SaleId
                     productId: item.ProductId,
                     unitPrice: item.UnitPrice,
                     quantity: item.Quantity,
                     discount: _discountService.CalculateDiscount(item.Quantity, item.UnitPrice)
-                ));
-            }
+                )).ToList()
+            );
 
+            // Persist the sale
             await _saleRepository.AddAsync(sale);
             await _unitOfWork.SaveChangesAsync();
             await _unitOfWork.CommitTransactionAsync();
@@ -80,8 +87,8 @@ public sealed class CreateSaleHandler : IRequestHandler<CreateSaleCommand, Creat
     /// Generates a unique sale number.
     /// </summary>
     /// <returns>A unique string representing the sale number.</returns>
-    private string GenerateSaleNumber()
+    private static string GenerateSaleNumber()
     {
-        return $"SALE-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}";
+        return $"SALE-{Guid.NewGuid().ToString()[..8].ToUpper()}";
     }
 }
