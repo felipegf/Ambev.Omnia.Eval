@@ -21,6 +21,8 @@ public class GetSaleHandler : IRequestHandler<GetSaleQuery, GetSaleResult>
     public async Task<GetSaleResult> Handle(GetSaleQuery request, CancellationToken cancellationToken)
     {
         var sale = await _saleRepository.GetByIdAsync(request.SaleId);
-        return sale is not null ? _mapper.Map<GetSaleResult>(sale) : null;
+        return sale is not null
+            ? _mapper.Map<GetSaleResult>(sale)
+            : new GetSaleResult();
     }
 }
