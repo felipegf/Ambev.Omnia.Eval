@@ -11,6 +11,7 @@ using Ambev.DeveloperEvaluation.Application.Sales.UpdateSale;
 using Ambev.DeveloperEvaluation.Application.Sales.DeleteSale;
 using Ambev.DeveloperEvaluation.Application.Sales.GetSale;
 using Ambev.DeveloperEvaluation.Common.Validation;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales;
 
@@ -140,8 +141,8 @@ public class SalesController : BaseController
                 })
             });
 
-        var command = _mapper.Map<GetSaleCommand>(request.Id);
-        var response = await _mediator.Send(command, cancellationToken);
+        var query = new GetSaleQuery(id);
+        var response = await _mediator.Send(query, cancellationToken);
 
         if (response == null)
             return NotFound(new ApiResponse
@@ -150,12 +151,7 @@ public class SalesController : BaseController
                 Message = "Sale not found"
             });
 
-        return Ok(new ApiResponseWithData<GetSaleResponse>
-        {
-            Success = true,
-            Message = "Sale retrieved successfully",
-            Data = _mapper.Map<GetSaleResponse>(response)
-        });
+        return Ok(_mapper.Map<GetSaleResponse>(response));
     }
 
     /// <summary>
