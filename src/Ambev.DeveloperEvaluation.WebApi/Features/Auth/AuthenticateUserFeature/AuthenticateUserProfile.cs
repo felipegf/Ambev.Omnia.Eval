@@ -13,15 +13,11 @@ public sealed class AuthenticateUserProfile : Profile
     /// Initializes a new instance of the <see cref="AuthenticateUserProfile"/> class.
     /// </summary>
     public AuthenticateUserProfile()
-    {
-        // Mapeamento de AuthenticateUserRequest -> AuthenticateUserCommand
+    {        
         CreateMap<AuthenticateUserRequest, AuthenticateUserCommand>();
-
-        // Mapeamento de AuthenticateUserResult -> AuthenticateUserResponse (Corrigindo o erro)
         CreateMap<AuthenticateUserResult, AuthenticateUserResponse>();
-
-        // Mapeamento de User -> AuthenticateUserResponse
         CreateMap<User, AuthenticateUserResponse>()
+
             .ForMember(dest => dest.Token, opt => opt.Ignore()) // O Token não é mapeado diretamente
             .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
     }
