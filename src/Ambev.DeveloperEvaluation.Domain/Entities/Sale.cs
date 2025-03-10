@@ -12,7 +12,7 @@ public class Sale : BaseEntity
     /// <summary>
     /// Gets the sale number.
     /// </summary>
-    public string SaleNumber { get; }
+    public string SaleNumber { get; } = string.Empty;
 
     /// <summary>
     /// Gets the date when the sale was made.
