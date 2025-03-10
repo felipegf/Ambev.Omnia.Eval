@@ -6,7 +6,7 @@
 public class GetSaleResult
 {
     public Guid SaleId { get; set; }
-    public string SaleNumber { get; set; }
+    public string SaleNumber { get; set; } = string.Empty;
     public DateTime SaleDate { get; set; }
     public Guid CustomerId { get; set; }
     public Guid BranchId { get; set; }
