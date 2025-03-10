@@ -20,7 +20,7 @@ public class DeleteSaleRequestValidator : AbstractValidator<DeleteSaleRequest>
     /// <summary>
     /// Asynchronously validates the request.
     /// </summary>
-    public Task<FluentValidation.Results.ValidationResult> ValidateAsync(DeleteSaleRequest request, CancellationToken cancellationToken)
+    public new Task<FluentValidation.Results.ValidationResult> ValidateAsync(DeleteSaleRequest request, CancellationToken cancellationToken)
     {
         return base.ValidateAsync(request, cancellationToken);
     }
