@@ -1,7 +1,9 @@
 ﻿namespace Ambev.DeveloperEvaluation.Unit.Application.Sales;
 
 using Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
+using Ambev.DeveloperEvaluation.Common.Events;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.Domain.Services;
 using Ambev.DeveloperEvaluation.ORM.UoW;
@@ -22,6 +24,7 @@ public class CreateSaleHandlerTests
     private readonly Mock<ISaleRepository> _saleRepositoryMock;
     private readonly Mock<IDiscountService> _discountServiceMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+    private readonly Mock<IEventBus> _eventBusMock; // ✅ Adicionado Mock do IEventBus
     private readonly CreateSaleHandler _handler;
 
     /// <summary>
@@ -32,11 +35,13 @@ public class CreateSaleHandlerTests
         _saleRepositoryMock = new Mock<ISaleRepository>();
         _discountServiceMock = new Mock<IDiscountService>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
+        _eventBusMock = new Mock<IEventBus>(); // ✅ Criando mock do EventBus
 
         _handler = new CreateSaleHandler(
             _saleRepositoryMock.Object,
             _discountServiceMock.Object,
-            _unitOfWorkMock.Object
+            _unitOfWorkMock.Object,
+            _eventBusMock.Object // ✅ Injetando no Handler
         );
     }
 
@@ -54,13 +59,13 @@ public class CreateSaleHandlerTests
             branchId: Guid.NewGuid(),
             items: new List<SaleItem>
             {
-            new SaleItem(
-                saleId: Guid.NewGuid(),
-                productId: Guid.NewGuid(),
-                unitPrice: 10.0m,
-                quantity: 2,
-                discount: 0
-            )
+                new SaleItem(
+                    saleId: Guid.NewGuid(),
+                    productId: Guid.NewGuid(),
+                    unitPrice: 10.0m,
+                    quantity: 2,
+                    discount: 0
+                )
             }
         );
 
@@ -86,6 +91,10 @@ public class CreateSaleHandlerTests
             .Setup(uow => uow.SaveChangesAsync())
             .ReturnsAsync(1);
 
+        _eventBusMock // Simulating the event bus
+            .Setup(bus => bus.PublishAsync(It.IsAny<SaleCreatedEvent>()))
+            .Returns(Task.CompletedTask);
+
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -93,6 +102,7 @@ public class CreateSaleHandlerTests
         Assert.NotNull(result);
         _saleRepositoryMock.Verify(repo => repo.AddAsync(It.IsAny<Sale>()), Times.Once);
         _unitOfWorkMock.Verify(uow => uow.SaveChangesAsync(), Times.Once);
+        _eventBusMock.Verify(bus => bus.PublishAsync(It.IsAny<SaleCreatedEvent>()), Times.Once); // ✅ Garante que o evento foi publicado
     }
 
     /// <summary>
@@ -112,6 +122,9 @@ public class CreateSaleHandlerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ValidationException>(() => _handler.Handle(command, CancellationToken.None));
+
+        // Garantee that the sale is not persisted
+        _eventBusMock.Verify(bus => bus.PublishAsync(It.IsAny<SaleCreatedEvent>()), Times.Never);
     }
 
     /// <summary>
@@ -128,13 +141,13 @@ public class CreateSaleHandlerTests
             branchId: Guid.NewGuid(),
             items: new List<SaleItem>
             {
-            new SaleItem(
-                saleId: Guid.NewGuid(),
-                productId: Guid.NewGuid(),
-                unitPrice: 10.0m,
-                quantity: 2,
-                discount: 0
-            )
+                new SaleItem(
+                    saleId: Guid.NewGuid(),
+                    productId: Guid.NewGuid(),
+                    unitPrice: 10.0m,
+                    quantity: 2,
+                    discount: 0
+                )
             }
         );
 
@@ -162,6 +175,6 @@ public class CreateSaleHandlerTests
         Assert.Equal("Database error", exception.Message);
 
         _unitOfWorkMock.Verify(uow => uow.SaveChangesAsync(), Times.Never);
+        _eventBusMock.Verify(bus => bus.PublishAsync(It.IsAny<SaleCreatedEvent>()), Times.Never); // Garantee that the event is not published
     }
-
 }
