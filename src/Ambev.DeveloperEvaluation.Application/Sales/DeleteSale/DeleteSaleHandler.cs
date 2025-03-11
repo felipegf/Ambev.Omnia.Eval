@@ -1,4 +1,6 @@
-﻿using Ambev.DeveloperEvaluation.Domain.Repositories;
+﻿using Ambev.DeveloperEvaluation.Common.Events;
+using Ambev.DeveloperEvaluation.Domain.Events.Sales;
+using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.ORM.UoW;
 using MediatR;
 
@@ -11,24 +13,21 @@ public class DeleteSaleHandler : IRequestHandler<DeleteSaleCommand, bool>
 {
     private readonly ISaleRepository _saleRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IEventBus _eventBus;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DeleteSaleHandler"/> class.
     /// </summary>
-    /// <param name="saleRepository">The repository for handling sales operations.</param>
-    /// <param name="unitOfWork">Unit of Work for transaction management.</param>
-    public DeleteSaleHandler(ISaleRepository saleRepository, IUnitOfWork unitOfWork)
+    public DeleteSaleHandler(ISaleRepository saleRepository, IUnitOfWork unitOfWork, IEventBus eventBus)
     {
         _saleRepository = saleRepository ?? throw new ArgumentNullException(nameof(saleRepository));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
     }
 
     /// <summary>
     /// Handles the sale deletion process (soft delete).
     /// </summary>
-    /// <param name="request">The command containing the sale ID.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <returns>True if the sale was deleted successfully, otherwise false.</returns>
     public async Task<bool> Handle(DeleteSaleCommand request, CancellationToken cancellationToken)
     {
         var sale = await _saleRepository.GetByIdAsync(request.SaleId);
@@ -41,8 +40,13 @@ public class DeleteSaleHandler : IRequestHandler<DeleteSaleCommand, bool>
 
         try
         {
-            _saleRepository.Delete(sale); // 🔹 Soft delete
+            _saleRepository.Delete(sale);
             await _unitOfWork.SaveChangesAsync();
+
+            // Publish the sale cancelled event
+            var saleCancelledEvent = new SaleCancelledEvent(sale.Id, "Sale cancelled.");
+            await _eventBus.PublishAsync(saleCancelledEvent);
+
             await _unitOfWork.CommitTransactionAsync();
             return true;
         }
