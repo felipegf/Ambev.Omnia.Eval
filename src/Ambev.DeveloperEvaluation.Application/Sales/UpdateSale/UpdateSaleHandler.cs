@@ -1,76 +1,64 @@
-﻿using Ambev.DeveloperEvaluation.Domain.Entities;
+﻿using Ambev.DeveloperEvaluation.Common.Events;
+using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.ORM.UoW;
 using AutoMapper;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.UpdateSale;
 
 /// <summary>
-/// Handles the update of a sale.
+/// Handles the process of updating a sale.
 /// </summary>
 public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, bool>
 {
     private readonly ISaleRepository _saleRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IEventBus _eventBus;
+    private readonly ILogger<UpdateSaleHandler> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateSaleHandler"/> class.
     /// </summary>
-    /// <param name="saleRepository">The repository for handling sales operations.</param>
-    /// <param name="unitOfWork">Unit of Work for transaction management.</param>
-    /// <param name="mapper">Mapper for transforming DTOs into entities.</param>
-    public UpdateSaleHandler(ISaleRepository saleRepository, IUnitOfWork unitOfWork, IMapper mapper)
+    public UpdateSaleHandler(
+        ISaleRepository saleRepository,
+        IUnitOfWork unitOfWork,
+        IMapper mapper,
+        IEventBus eventBus,
+        ILogger<UpdateSaleHandler> logger)
     {
         _saleRepository = saleRepository ?? throw new ArgumentNullException(nameof(saleRepository));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
     /// Handles the update of a sale.
     /// </summary>
-    /// <param name="request">The command containing sale details.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-    /// <returns>True if the sale was updated successfully, otherwise false.</returns>
     public async Task<bool> Handle(UpdateSaleCommand request, CancellationToken cancellationToken)
     {
         var sale = await _saleRepository.GetByIdAsync(request.SaleId);
         if (sale is null)
         {
+            _logger.LogWarning("Sale with ID {SaleId} not found.", request.SaleId);
             return false;
         }
 
-        await _unitOfWork.BeginTransactionAsync();
+        _mapper.Map(request, sale);
+        _saleRepository.Update(sale);
 
-        try
-        {            
-            var updatedSale = new Sale(
-                saleNumber: sale.SaleNumber,
-                saleDate: request.SaleDate,
-                customerId: sale.CustomerId,
-                branchId: sale.BranchId,
-                items: request.Items.Select(i => new SaleItem(
-                    saleId: sale.Id,
-                    productId: i.ProductId,
-                    unitPrice: i.UnitPrice,
-                    quantity: i.Quantity,
-                    discount: i.Discount
-                )).ToList()
-            );
+        await _unitOfWork.SaveChangesAsync();
 
-            _saleRepository.Update(updatedSale);
-            await _unitOfWork.SaveChangesAsync();
-            await _unitOfWork.CommitTransactionAsync();
+        // Publish SaleUpdatedEvent
+        var saleUpdatedEvent = new SaleUpdatedEvent(sale.Id, sale.SaleNumber, sale.SaleDate);
+        await _eventBus.PublishAsync(saleUpdatedEvent);
 
-            return true;
-        }
-        catch
-        {
-            await _unitOfWork.RollbackTransactionAsync();
-            throw;
-        }
+        _logger.LogInformation("SaleUpdatedEvent published for Sale ID {SaleId}.", sale.Id);
+
+        return true;
     }
-
 }
